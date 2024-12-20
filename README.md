@@ -4,7 +4,7 @@ Nano-Edu schematic files and code examples:
 - Main website: https://steamtronix.az/product/nano-edu/
 - Documentation: https://steamtronix.github.io/docs/ 
 
-![Nano-Edu revB](docs/nano-edu-revB-3D.png)
+![Nano-Edu revB](docs/nano-edu-revB.png)
 
 
 ## License
