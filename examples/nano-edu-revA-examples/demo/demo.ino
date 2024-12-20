@@ -16,7 +16,6 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
 #include <Adafruit_NeoPixel.h>
-#include "DHT_Async.h"
 
 
 #define I2C_ADDRESS 0x3c //initialize with the I2C addr 0x3C Typically eBay OLED's
@@ -60,16 +59,16 @@ bool motorRunning = false;
 float humidity = 50;
 float temperature = 22;
 
-DHT_Async dht_sensor(dhtPin, DHT_SENSOR_TYPE);
+//DHT_Async dht_sensor(dhtPin, DHT_SENSOR_TYPE);
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, neopixelPin, NEO_GRB + NEO_KHZ800);
 
 
 void setup(){
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   delay(250); // wait for the OLED to power up
-  Serial.println("SteamtroniX Demo");
+  Serial.println("SteamtroniX Demo V1");
 
   pinMode(relayPin, OUTPUT);
   pinMode(motorA2Pin, OUTPUT);
@@ -111,6 +110,7 @@ void setup(){
   display.setTextSize(1);
 
   strip.begin();
+  
   strip.setPixelColor(0, 0, 0, LED_BRIGHTNESS); 
   strip.setPixelColor(1, 0, 0, LED_BRIGHTNESS); 
   strip.setPixelColor(2, 0, 0, LED_BRIGHTNESS); 
@@ -123,6 +123,8 @@ void setup(){
   strip.setPixelColor(9, 0, LED_BRIGHTNESS, 0); 
   strip.show();
 
+  delay(2000);
+
 }
 
 
@@ -131,6 +133,18 @@ void loop() {
   int ldrValue = analogRead(ldrPin);      // Read analog value from LDR
   int soundValue = analogRead(soundPin);  // Read analog value from microphone
   int gasValue = analogRead(gasPin);      // Read analog value from MQ7
+
+  int numLedsLit = sliderValue/100;
+
+   for (int i = NUM_LEDS; i > 0; i--) {
+    if (i <= numLedsLit) {
+      strip.setPixelColor(NUM_LEDS - i, 55, 0, 0); // Red, with reversed index
+    } else {
+      strip.setPixelColor(NUM_LEDS - i, 0, 0, 0); // Turn off LED
+    }
+  }
+  strip.show();
+
 
   int motorSpeed = map(sliderValue, 0, 1023, 0, 255);
 
@@ -177,8 +191,8 @@ void loop() {
   display.print(F("Sound: ")); display.println(soundValue); 
   display.print(F("Gas: ")); display.println(gasValue); 
   display.print(F("Slider: ")); display.println(sliderValue); 
-  display.print(F("Temperature: ")); display.print(temperature); display.println(F(" C")); 
-  display.print(F("R. Humidity: ")); display.print(humidity); display.println(F(" %")); 
+  display.print(F("Temperature: ")); display.print("21.2"); display.println(F(" C")); 
+  display.print(F("R. Humidity: ")); display.print("63"); display.println(F(" %")); 
 
 
   display.display();
