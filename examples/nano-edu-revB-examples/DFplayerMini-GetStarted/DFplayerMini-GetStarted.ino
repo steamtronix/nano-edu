@@ -1,3 +1,20 @@
+/*
+ * Sketch: DFPlayer Test
+ * Author: Orkhan Amiraslan (@azerimaker)
+ * Date: April 10, 2025
+ * Description:  
+    
+    Format the microSD card to FAT32.
+    Rename MP3 files in the format 0001.mp3, 0002.mp3, etc.
+    Insert the SD card into DFPlayer Mini.
+    Power up the Nano-Edu board and upload the code
+
+ * Libraries: DFRobotDFPlayerMini.h
+ * Circuit: Push buttons and DFPlayer Mini Module
+ * Credits: 
+ * Feel free to use and modify for educational purposes.
+ */
+
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -10,16 +27,21 @@
 #define SCREEN_ADDRESS 0x3C 
 
 #define BUTTON_PRESSED LOW
+#define BUTTON_NOT_PRESSED HIGH
 
 SoftwareSerial softSerial(/*rx =*/A1, /*tx =*/A2);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
 DFRobotDFPlayerMini myDFPlayer;
+
 void printDetail(uint8_t type, int value);
 
 unsigned long previousMillis = 0;
-const long interval = 100;
+
+int lastSliderVolume = 0; 
+
+const long interval = 50;
 const int sw1 = 2;
 const int sw2 = 3;
 
@@ -38,26 +60,25 @@ void setup()
   Serial.println(F("STEAMtronix DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
-  
-  if (!myDFPlayer.begin(softSerial, /*isACK = */true, /*doReset = */true)) {  //Use serial to communicate with mp3.
-    Serial.println(F("Unable to begin:"));
+  delay(500);
+
+  if (!myDFPlayer.begin(softSerial, /*isACK = */true, /*doReset = */true)) 
+  {  
     Serial.println(F("1.Please recheck the connection!"));
     Serial.println(F("2.Please insert the SD card!"));
     while(true){
-      delay(0); // Code to compatible with ESP8266 watch dog.
-    }
-  }
+      delay(0); 
+  }}
   Serial.println(F("DFPlayer Mini online."));
+  myDFPlayer.setTimeOut(500); //Set serial communictaion time out 500ms
 
    if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Don't proceed, loop forever
+    for(;;); 
   }
 
   display.clearDisplay();
 
-
-  
   display.setTextSize(1);     
   display.setTextColor(SSD1306_WHITE);
   
@@ -67,15 +88,34 @@ void setup()
   display.setCursor(40, 20);
   display.println(F("NANO-EDU")); 
 
-  display.setCursor(10, 35);
-  display.println(F("DFPlayer Mini Demo"));
+  display.setCursor(20, 35);
+  display.println(F("Mini MP3 Player"));
 
   display.display();
   delay(1000);
 
   
-  myDFPlayer.volume(20);  //Set volume value. From 0 to 30
-  myDFPlayer.play(1);  //Play the first mp3
+  myDFPlayer.volume(15);  //Set volume value. From 0 to 30
+  //myDFPlayer.play(1);  //Play the first mp3
+
+    //----Set different EQ----
+  myDFPlayer.EQ(DFPLAYER_EQ_NORMAL);
+//  myDFPlayer.EQ(DFPLAYER_EQ_POP);
+//  myDFPlayer.EQ(DFPLAYER_EQ_ROCK);
+//  myDFPlayer.EQ(DFPLAYER_EQ_JAZZ);
+//  myDFPlayer.EQ(DFPLAYER_EQ_CLASSIC);
+//  myDFPlayer.EQ(DFPLAYER_EQ_BASS);
+
+  myDFPlayer.outputDevice(DFPLAYER_DEVICE_SD);
+
+   //----Read imformation----
+  Serial.println(myDFPlayer.readState()); //read mp3 state
+  Serial.println(myDFPlayer.readVolume()); //read current volume
+  Serial.println(myDFPlayer.readEQ()); //read EQ setting
+  Serial.println(myDFPlayer.readFileCounts()); //read all file counts in SD card
+  Serial.println(myDFPlayer.readCurrentFileNumber()); //read current play file number
+  Serial.println(myDFPlayer.readFileCountsInFolder(3)); //read file counts in folder SD:/03
+
 }
 
 void loop()
@@ -91,27 +131,32 @@ void loop()
     sw2_state = digitalRead(sw2);
 
     int sliderVolume = map(sliderValue, 0, 1023, 0, 30);
-    myDFPlayer.volume(sliderVolume); 
-    Serial.print(F("Slider volume: "));
-    Serial.print(sliderVolume);
-    Serial.print(F(" Buttons: "));
-    Serial.print(sw1_state);
-    Serial.print(F(", "));
-    Serial.println(sw2_state);
+    if (sliderVolume != lastSliderVolume) {
+        myDFPlayer.volume(sliderVolume); 
+        lastSliderVolume = sliderVolume;
+    }
+    
+    
+    //Serial.print(F("Slider volume: "));
+    //Serial.print(sliderVolume);
+    //Serial.print(F(" Buttons: "));
+    //Serial.print(sw1_state);
+    //Serial.print(F(", "));
+    //Serial.println(sw2_state);
   }
 
   if(sw1_state == BUTTON_PRESSED) {
     myDFPlayer.next();
-    sw1_state = HIGH; // reset
+    sw1_state = BUTTON_NOT_PRESSED; // reset
     Serial.println(F("Next!"));
+    delay(200);
   }
   if(sw2_state == BUTTON_PRESSED) {
     myDFPlayer.previous();
-    sw2_state = HIGH; // reset
+    sw2_state = BUTTON_NOT_PRESSED; // reset
     Serial.println(F("Previous!"));
+    delay(200);
   }
-
-
 
   
   /*
@@ -124,7 +169,7 @@ void loop()
   */
 
   if (myDFPlayer.available()) {
-   // printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
+   printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
   }
 }
 
